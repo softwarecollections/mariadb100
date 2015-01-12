@@ -1,9 +1,10 @@
 # Define SCL name
-%{!?scl_name_base: %global scl_name_base %{scl_vendor}-mariadb}
+%{!?scl_name_prefix: %global scl_name_prefix rh-}
+%{!?scl_name_base: %global scl_name_base mariadb}
 %{!?version_major: %global version_major 10}
 %{!?version_minor: %global version_minor 0}
 %{!?scl_name_version: %global scl_name_version %{version_major}%{version_minor}}
-%{!?scl: %global scl %{scl_name_base}%{scl_name_version}}
+%{!?scl: %global scl %{scl_name_prefix}%{scl_name_base}%{scl_name_version}}
 
 # Turn on new layout -- prefix for packages and location
 # for config and variable files
@@ -38,12 +39,9 @@
 %global debug_package %{nil}
 
 Summary: Package that installs %{scl}
-# use %%scl_meta_name as resulting package name
-# if %%scl_meta_name is not defined then use %%scl_name
-# if %%scl_name is also not defined then use %%scl defined above
-Name: %{?scl_meta_name}%{!?scl_meta_name:%scl}
+Name: %{scl}
 Version: 2.0
-Release: 2%{?dist}
+Release: 3%{?dist}
 License: GPLv2+
 Group: Applications/File
 Source0: README
@@ -54,10 +52,11 @@ BuildRequires: scl-utils-build help2man
 
 %description
 This is the main package for %{scl} Software Collection, which installs
-necessary packages to use MariaDB %{version_major}.%{version_minor} server, a community developed branch
-of MySQL. Software Collections allow to install more versions of the same
-package by using alternative directory structure.
-Install this package if you want to use MariaDB %{version_major}.%{version_minor} server on your system.
+necessary packages to use MariaDB %{version_major}.%{version_minor} server,
+a community developed branch of MySQL. Software Collections allow to install
+more versions of the same package by using alternative directory structure.
+Install this package if you want to use MariaDB %{version_major}.%{version_minor}
+Software Collection server on your system.
 
 %package runtime
 Summary: Package that handles %{scl} Software Collection.
@@ -205,6 +204,9 @@ selinuxenabled && load_policy || :
 %{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel
 
 %changelog
+* Fri Jan 09 2015 Honza Horak <hhorak@redhat.com> - 2.0-3
+- Change prefix handling
+
 * Fri Dec 05 2014 Honza Horak <hhorak@redhat.com> - 2.0-2
 - Rework macros specification
   Specify macros that can be used in other packages in the collection
