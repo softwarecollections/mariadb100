@@ -167,6 +167,7 @@ mkdir -p %{buildroot}%{_mandir}/man7/
 install -m 644 %{?scl_name}.7 %{buildroot}%{_mandir}/man7/%{?scl_name}.7
 
 # create directory for SCL register scripts
+mkdir -p %{buildroot}%{?_scl_scripts}/register.files
 mkdir -p %{buildroot}%{?_scl_scripts}/register.d
 cat <<EOF >%{buildroot}%{?_scl_scripts}/register
 #!/bin/sh
@@ -207,6 +208,7 @@ EOF
 %config(noreplace) %{?_scl_scripts}/service-environment
 %{_mandir}/man7/%{?scl_name}.*
 %attr(0755,root,root) %{?_scl_scripts}/register
+%dir %{?_scl_scripts}/register.files
 %dir %{?_scl_scripts}/register.d
 %{?_scl_scripts}/register.d/3-fix-main-selinux
 
