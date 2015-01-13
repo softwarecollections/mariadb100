@@ -42,7 +42,7 @@
 Summary: Package that installs %{scl}
 Name: %{scl}
 Version: 2.0
-Release: 5%{?dist}
+Release: 6%{?dist}
 License: GPLv2+
 Group: Applications/File
 Source0: README
@@ -166,22 +166,33 @@ EOF
 mkdir -p %{buildroot}%{_mandir}/man7/
 install -m 644 %{?scl_name}.7 %{buildroot}%{_mandir}/man7/%{?scl_name}.7
 
+# create directory for SCL register scripts
+mkdir -p %{buildroot}%{?_scl_scripts}/register.d
+cat <<EOF >%{buildroot}%{?_scl_scripts}/register
+#!/bin/sh
+ls %{?_scl_scripts}/register.d/* | while read file ; do
+    source $(readlink -f $file)
+done
+EOF
+
+cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/3-fix-main-selinux
+#!/bin/sh
+semanage fcontext -a -e / %{?_scl_root} >/dev/null 2>&1 || :
+semanage fcontext -a -e %{_root_sysconfdir} %{_sysconfdir} >/dev/null 2>&1 || :
+semanage fcontext -a -e %{_root_localstatedir} %{_localstatedir} >/dev/null 2>&1 || :
+selinuxenabled && load_policy || :
+restorecon -R %{?_scl_root} >/dev/null 2>&1 || :
+restorecon -R %{_sysconfdir} >/dev/null 2>&1 || :
+restorecon -R %{_localstatedir} >/dev/null 2>&1 || :
+EOF
+
 %post runtime
 # Simple copy of context from system root to SCL root.
 # In case new version needs some additional rules or context definition,
 # it needs to be solved in base system.
 # semanage does not have -e option in RHEL-5, so we would
 # have to have its own policy for collection.
-semanage fcontext -a -e / %{?_scl_root} >/dev/null 2>&1 || :
-semanage fcontext -a -e %{selinux_config_source} %{_sysconfdir}/my.cnf >/dev/null 2>&1 || :
-semanage fcontext -a -e %{selinux_config_source} %{_sysconfdir}/my.cnf.d >/dev/null 2>&1 || :
-semanage fcontext -a -e %{selinux_log_source} %{logfiledir} >/dev/null 2>&1 || :
-semanage fcontext -a -e %{selinux_daemon_source} %{daemondir}/%{daemonname} >/dev/null 2>&1 || :
-selinuxenabled && load_policy || :
-restorecon -R %{?_scl_root} >/dev/null 2>&1 || :
-restorecon -R %{_sysconfdir} >/dev/null 2>&1 || :
-restorecon -R %{logfiledir} >/dev/null 2>&1 || :
-restorecon %{daemondir}/%{daemonname} >/dev/null 2>&1 || :
+%{?_scl_scripts}/register.d/3-fix-main-selinux
 
 %files
 
@@ -195,6 +206,9 @@ restorecon %{daemondir}/%{daemonname} >/dev/null 2>&1 || :
 %{?scl_files}
 %config(noreplace) %{?_scl_scripts}/service-environment
 %{_mandir}/man7/%{?scl_name}.*
+%attr(0755,root,root) %{?_scl_scripts}/register
+%dir %{?_scl_scripts}/register.d
+%{?_scl_scripts}/register.d/3-fix-main-selinux
 
 %files build
 %doc LICENSE
@@ -205,6 +219,9 @@ restorecon %{daemondir}/%{daemonname} >/dev/null 2>&1 || :
 %{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel
 
 %changelog
+* Tue Jan 13 2015 Honza Horak <hhorak@redhat.com> - 2.0-6
+- Re-work selinux rules setting and register layout
+
 * Tue Jan 13 2015 Honza Horak <hhorak@redhat.com> - 2.0-5
 - Use prefix in service-environment variable
 
