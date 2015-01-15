@@ -172,7 +172,7 @@ mkdir -p %{buildroot}%{?_scl_scripts}/register.d
 cat <<EOF >%{buildroot}%{?_scl_scripts}/register
 #!/bin/sh
 ls %{?_scl_scripts}/register.d/* | while read file ; do
-    source $(readlink -f $file)
+    [ -x \$f ] && source \$(readlink -f \$file)
 done
 EOF
 
