@@ -176,12 +176,14 @@ ls %{?_scl_scripts}/register.d/* | while read file ; do
 done
 EOF
 
-cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/3-fix-main-selinux
+cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/3-define-main-selinux
 #!/bin/sh
 semanage fcontext -a -e / %{?_scl_root} >/dev/null 2>&1 || :
 semanage fcontext -a -e %{_root_sysconfdir} %{_sysconfdir} >/dev/null 2>&1 || :
 semanage fcontext -a -e %{_root_localstatedir} %{_localstatedir} >/dev/null 2>&1 || :
 selinuxenabled && load_policy || :
+EOF
+cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/8-apply-main-selinux
 restorecon -R %{?_scl_root} >/dev/null 2>&1 || :
 restorecon -R %{_sysconfdir} >/dev/null 2>&1 || :
 restorecon -R %{_localstatedir} >/dev/null 2>&1 || :
@@ -193,7 +195,8 @@ EOF
 # it needs to be solved in base system.
 # semanage does not have -e option in RHEL-5, so we would
 # have to have its own policy for collection.
-%{?_scl_scripts}/register.d/3-fix-main-selinux
+%{?_scl_scripts}/register.d/3-define-main-selinux
+%{?_scl_scripts}/register.d/8-apply-main-selinux
 
 %files
 
@@ -210,7 +213,8 @@ EOF
 %attr(0755,root,root) %{?_scl_scripts}/register
 %dir %{?_scl_scripts}/register.files
 %dir %{?_scl_scripts}/register.d
-%{?_scl_scripts}/register.d/3-fix-main-selinux
+%{?_scl_scripts}/register.d/3-define-main-selinux
+%{?_scl_scripts}/register.d/8-apply-main-selinux
 
 %files build
 %doc LICENSE
