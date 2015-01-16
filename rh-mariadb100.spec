@@ -5,7 +5,6 @@
 %{!?version_minor: %global version_minor 0}
 %{!?scl_name_version: %global scl_name_version %{version_major}%{version_minor}}
 %{!?scl: %global scl %{scl_name_prefix}%{scl_name_base}%{scl_name_version}}
-%global scl_upper %{lua:print(string.upper(string.gsub(rpm.expand("%{scl}"), "-", "_")))}
 
 # Turn on new layout -- prefix for packages and location
 # for config and variable files
@@ -42,7 +41,7 @@
 Summary: Package that installs %{scl}
 Name: %{scl}
 Version: 2.0
-Release: 6%{?dist}
+Release: 7%{?dist}
 License: GPLv2+
 Group: Applications/File
 Source0: README
@@ -151,17 +150,6 @@ cat >> %{buildroot}%{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel << E
 %%scl_prefix_%{scl_name_base} %{?scl_prefix}
 EOF
 
-# generate a configuration file for daemon
-cat >> %{buildroot}%{?_scl_scripts}/service-environment << EOF
-# Services are started in a fresh environment without any influence of user's
-# environment (like environment variable values). As a consequence,
-# information of all enabled collections will be lost during service start up.
-# If user needs to run a service under any software collection enabled, this
-# collection has to be written into %{scl_upper}_SCLS_ENABLED variable 
-# in %{?_scl_scripts}/service-environment.
-%{scl_upper}_SCLS_ENABLED="%{scl}"
-EOF
-
 # install generated man page
 mkdir -p %{buildroot}%{_mandir}/man7/
 install -m 644 %{?scl_name}.7 %{buildroot}%{_mandir}/man7/%{?scl_name}.7
@@ -208,13 +196,12 @@ EOF
 %endif
 %doc README LICENSE
 %{?scl_files}
-%config(noreplace) %{?_scl_scripts}/service-environment
 %{_mandir}/man7/%{?scl_name}.*
 %attr(0755,root,root) %{?_scl_scripts}/register
 %dir %{?_scl_scripts}/register.files
 %dir %{?_scl_scripts}/register.d
-%{?_scl_scripts}/register.d/3-define-main-selinux
-%{?_scl_scripts}/register.d/8-apply-main-selinux
+%attr(0755,root,root) %{?_scl_scripts}/register.d/3-define-main-selinux
+%attr(0755,root,root) %{?_scl_scripts}/register.d/8-apply-main-selinux
 
 %files build
 %doc LICENSE
@@ -225,6 +212,9 @@ EOF
 %{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel
 
 %changelog
+* Fri Jan 16 2015 Honza Horak <hhorak@redhat.com> - 2.0-7
+- Move service-environment into mariadb package
+
 * Tue Jan 13 2015 Honza Horak <hhorak@redhat.com> - 2.0-6
 - Re-work selinux rules setting and register layout
 
