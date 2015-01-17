@@ -15,34 +15,13 @@
 # Define SCL macros
 %{?scl_package:%scl_package %scl}
 
-# Define where to get propper SELinux context
-# and define names and locations specific for the whole collection
-%global selinux_config_source %{?_root_sysconfdir}/my.cnf
-%global daemonname %{?scl_prefix}mariadb
-%if 0%{?rhel} >= 7 || 0%{?fedora} >= 15
-%global selinux_daemon_source %{_unitdir}/mariadb
-%global selinux_log_source %{?_root_localstatedir}/log/mariadb
-%global daemondir %{_unitdir}
-%else
-%global selinux_daemon_source %{_initddir}/mysqld
-%global selinux_log_source %{?_root_localstatedir}/log/mysql
-%global daemondir %{_initddir}
-%endif
-%if 0%{?nfsmountable:1}
-%global logfiledir %{_localstatedir}/log/mariadb
-%global dbdatadir %{_localstatedir}/lib/mysql
-%else
-%global logfiledir %{?_root_localstatedir}/log/%{?scl_prefix}mariadb
-%global dbdatadir %{?_scl_root}/var/lib/mysql
-%endif
-
 # do not produce empty debuginfo package
 %global debug_package %{nil}
 
 Summary: Package that installs %{scl}
 Name: %{scl}
 Version: 2.0
-Release: 6%{?dist}
+Release: 7%{?dist}
 License: GPLv2+
 Group: Applications/File
 Source0: README
@@ -89,9 +68,11 @@ packages depending on %{scl} Software Collection.
 
 # This section generates README file from a template and creates man page
 # from that file, expanding RPM macros in the template file.
-cat >README <<'EOF'
-%{expand:%(cat %{SOURCE0})}
+cp %SOURCE0 README.template
+cat >README.new <<'EOF'
+%include README
 EOF
+mv README.new README
 
 # copy the license file so %%files section sees it
 cp %{SOURCE1} .
@@ -138,13 +119,6 @@ export XDG_DATA_DIRS="%{_datadir}\${XDG_DATA_DIRS:+:\${XDG_DATA_DIRS}}"
 export PKG_CONFIG_PATH="%{_libdir}/pkgconfig\${PKG_CONFIG_PATH:+:\${PKG_CONFIG_PATH}}"
 EOF
 
-# define configuration and variable files location for whole collection
-cat >> %{buildroot}%{_root_sysconfdir}/rpm/macros.%{scl}-config << EOF
-%%scl_%{scl_name_base}_daemonname %{daemonname}
-%%scl_%{scl_name_base}_logfiledir %{logfiledir}
-%%scl_%{scl_name_base}_dbdatadir %{dbdatadir}
-EOF
-
 # generate rpm macros file for depended collections
 cat >> %{buildroot}%{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel << EOF
 %%scl_%{scl_name_base} %{scl}
@@ -167,7 +141,7 @@ mkdir -p %{buildroot}%{_mandir}/man7/
 install -m 644 %{?scl_name}.7 %{buildroot}%{_mandir}/man7/%{?scl_name}.7
 
 # create directory for SCL register scripts
-mkdir -p %{buildroot}%{?_scl_scripts}/register.files
+mkdir -p %{buildroot}%{?_scl_scripts}/register.content
 mkdir -p %{buildroot}%{?_scl_scripts}/register.d
 cat <<EOF >%{buildroot}%{?_scl_scripts}/register
 #!/bin/sh
@@ -175,19 +149,31 @@ ls %{?_scl_scripts}/register.d/* | while read file ; do
     [ -x \$f ] && source \$(readlink -f \$file)
 done
 EOF
+# and unregister as well
+mkdir -p %{buildroot}%{?_scl_scripts}/unregister.d
+cat <<EOF >%{buildroot}%{?_scl_scripts}/unregister
+#!/bin/sh
+ls %{?_scl_scripts}/unregister.d/* | while read file ; do
+    [ -x \$f ] && source \$(readlink -f \$file)
+done
+EOF
 
-cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/3-define-main-selinux
+cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/30.selinux-set
 #!/bin/sh
 semanage fcontext -a -e / %{?_scl_root} >/dev/null 2>&1 || :
 semanage fcontext -a -e %{_root_sysconfdir} %{_sysconfdir} >/dev/null 2>&1 || :
 semanage fcontext -a -e %{_root_localstatedir} %{_localstatedir} >/dev/null 2>&1 || :
 selinuxenabled && load_policy || :
 EOF
-cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/8-apply-main-selinux
+cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/70.selinux-restore
 restorecon -R %{?_scl_root} >/dev/null 2>&1 || :
 restorecon -R %{_sysconfdir} >/dev/null 2>&1 || :
 restorecon -R %{_localstatedir} >/dev/null 2>&1 || :
 EOF
+
+# we need to own all these directories, so create them to have them listed
+mkdir -p %{buildroot}%{?_scl_scripts}/register.content%{_unitdir}
+mkdir -p %{buildroot}%{?_scl_scripts}/register.content%{_sysconfdir}
 
 %post runtime
 # Simple copy of context from system root to SCL root.
@@ -195,8 +181,8 @@ EOF
 # it needs to be solved in base system.
 # semanage does not have -e option in RHEL-5, so we would
 # have to have its own policy for collection.
-%{?_scl_scripts}/register.d/3-define-main-selinux
-%{?_scl_scripts}/register.d/8-apply-main-selinux
+%{?_scl_scripts}/register.d/30.selinux-set
+%{?_scl_scripts}/register.d/70.selinux-restore
 
 %files
 
@@ -211,10 +197,11 @@ EOF
 %config(noreplace) %{?_scl_scripts}/service-environment
 %{_mandir}/man7/%{?scl_name}.*
 %attr(0755,root,root) %{?_scl_scripts}/register
-%dir %{?_scl_scripts}/register.files
+%attr(0755,root,root) %{?_scl_scripts}/unregister
+%{?_scl_scripts}/register.content
 %dir %{?_scl_scripts}/register.d
-%{?_scl_scripts}/register.d/3-define-main-selinux
-%{?_scl_scripts}/register.d/8-apply-main-selinux
+%dir %{?_scl_scripts}/unregister.d
+%attr(0755,root,root) %{?_scl_scripts}/register.d/*
 
 %files build
 %doc LICENSE
@@ -225,6 +212,9 @@ EOF
 %{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel
 
 %changelog
+* Sat Jan 17 2015 Honza Horak <hhorak@redhat.com>
+- Rework register implementation
+
 * Tue Jan 13 2015 Honza Horak <hhorak@redhat.com> - 2.0-6
 - Re-work selinux rules setting and register layout
 
