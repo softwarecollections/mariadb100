@@ -67,7 +67,7 @@ packages depending on %{scl} Software Collection.
 
 # This section generates README file from a template and creates man page
 # from that file, expanding RPM macros in the template file.
-cat >README <<'EOF'
+cat <<'EOF' | tee README
 %include %{_sourcedir}/README
 EOF
 
@@ -76,7 +76,7 @@ cp %{SOURCE1} .
 
 %build
 # generate a helper script that will be used by help2man
-cat >h2m_helper <<'EOF'
+cat <<'EOF' | tee h2m_helper
 #!/bin/bash
 [ "$1" == "--version" ] && echo "%{?scl_name} %{version} Software Collection" || cat README
 EOF
@@ -95,7 +95,7 @@ mkdir -p %{buildroot}%{_datadir}/aclocal
 %endif
 
 # create enable scriptlet that sets correct environment for collection
-cat >> %{buildroot}%{?_scl_scripts}/enable << EOF
+cat << EOF | tee -a %{buildroot}%{?_scl_scripts}/enable
 # For binaries
 export PATH="%{_bindir}\${PATH:+:\${PATH}}"
 # For header files
@@ -117,7 +117,7 @@ export PKG_CONFIG_PATH="%{_libdir}/pkgconfig\${PKG_CONFIG_PATH:+:\${PKG_CONFIG_P
 EOF
 
 # generate rpm macros file for depended collections
-cat >> %{buildroot}%{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel << EOF
+cat << EOF | tee -a %{buildroot}%{_root_sysconfdir}/rpm/macros.%{scl_name_base}-scldevel
 %%scl_%{scl_name_base} %{scl}
 %%scl_prefix_%{scl_name_base} %{?scl_prefix}
 EOF
@@ -129,7 +129,7 @@ install -m 644 %{?scl_name}.7 %{buildroot}%{_mandir}/man7/%{?scl_name}.7
 # create directory for SCL register scripts
 mkdir -p %{buildroot}%{?_scl_scripts}/register.content
 mkdir -p %{buildroot}%{?_scl_scripts}/register.d
-cat <<EOF >%{buildroot}%{?_scl_scripts}/register
+cat <<EOF | tee %{buildroot}%{?_scl_scripts}/register
 #!/bin/sh
 ls %{?_scl_scripts}/register.d/* | while read file ; do
     [ -x \$f ] && source \$(readlink -f \$file)
@@ -137,21 +137,21 @@ done
 EOF
 # and deregister as well
 mkdir -p %{buildroot}%{?_scl_scripts}/deregister.d
-cat <<EOF >%{buildroot}%{?_scl_scripts}/deregister
+cat <<EOF | tee %{buildroot}%{?_scl_scripts}/deregister
 #!/bin/sh
 ls %{?_scl_scripts}/deregister.d/* | while read file ; do
     [ -x \$f ] && source \$(readlink -f \$file)
 done
 EOF
 
-cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/30.selinux-set
+cat <<EOF | tee %{buildroot}%{?_scl_scripts}/register.d/30.selinux-set
 #!/bin/sh
 semanage fcontext -a -e / %{?_scl_root} >/dev/null 2>&1 || :
 semanage fcontext -a -e %{_root_sysconfdir} %{_sysconfdir} >/dev/null 2>&1 || :
 semanage fcontext -a -e %{_root_localstatedir} %{_localstatedir} >/dev/null 2>&1 || :
 selinuxenabled && load_policy || :
 EOF
-cat <<EOF >%{buildroot}%{?_scl_scripts}/register.d/70.selinux-restore
+cat <<EOF | tee %{buildroot}%{?_scl_scripts}/register.d/70.selinux-restore
 restorecon -R %{?_scl_root} >/dev/null 2>&1 || :
 restorecon -R %{_sysconfdir} >/dev/null 2>&1 || :
 restorecon -R %{_localstatedir} >/dev/null 2>&1 || :
