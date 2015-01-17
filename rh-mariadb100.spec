@@ -137,11 +137,11 @@ ls %{?_scl_scripts}/register.d/* | while read file ; do
     [ -x \$f ] && source \$(readlink -f \$file)
 done
 EOF
-# and unregister as well
-mkdir -p %{buildroot}%{?_scl_scripts}/unregister.d
-cat <<EOF >%{buildroot}%{?_scl_scripts}/unregister
+# and deregister as well
+mkdir -p %{buildroot}%{?_scl_scripts}/deregister.d
+cat <<EOF >%{buildroot}%{?_scl_scripts}/deregister
 #!/bin/sh
-ls %{?_scl_scripts}/unregister.d/* | while read file ; do
+ls %{?_scl_scripts}/deregister.d/* | while read file ; do
     [ -x \$f ] && source \$(readlink -f \$file)
 done
 EOF
@@ -184,10 +184,10 @@ mkdir -p %{buildroot}%{?_scl_scripts}/register.content%{_sysconfdir}
 %{?scl_files}
 %{_mandir}/man7/%{?scl_name}.*
 %attr(0755,root,root) %{?_scl_scripts}/register
-%attr(0755,root,root) %{?_scl_scripts}/unregister
+%attr(0755,root,root) %{?_scl_scripts}/deregister
 %{?_scl_scripts}/register.content
 %dir %{?_scl_scripts}/register.d
-%dir %{?_scl_scripts}/unregister.d
+%dir %{?_scl_scripts}/deregister.d
 %attr(0755,root,root) %{?_scl_scripts}/register.d/*
 
 %files build
