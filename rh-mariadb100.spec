@@ -67,11 +67,9 @@ packages depending on %{scl} Software Collection.
 
 # This section generates README file from a template and creates man page
 # from that file, expanding RPM macros in the template file.
-cp %SOURCE0 README.template
-cat >README.new <<'EOF'
-%include README
+cat >README <<'EOF'
+%{include %SOURCE0}
 EOF
-mv README.new README
 
 # copy the license file so %%files section sees it
 cp %{SOURCE1} .
