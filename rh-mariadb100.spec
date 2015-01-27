@@ -156,7 +156,7 @@ restorecon -R %{_localstatedir} >/dev/null 2>&1 || :
 EOF
 
 # we need to own all these directories, so create them to have them listed
-mkdir -p %{buildroot}%{?_scl_scripts}/register.content%{_unitdir}
+mkdir -p %{buildroot}%{?_scl_scripts}/register.content%{_localstatedir}
 mkdir -p %{buildroot}%{?_scl_scripts}/register.content%{_sysconfdir}
 
 %post runtime
