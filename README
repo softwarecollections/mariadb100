@@ -1,5 +1,5 @@
 Package %{?scl_name} provides MariaDB database server delivered as a Software
-Collection. For more information about Software Collections,
+Collection (SCL). For more information about Software Collections,
 see the scl(1) man page. By installing the %{?scl_name} collection,
 you will get the minimum working set of packages to have a working
 MariaDB database server.
@@ -7,7 +7,7 @@ MariaDB database server.
 %if 0%{?rhel} >= 7 || 0%{?fedora} >= 15
 Usage: systemctl start %{?scl_prefix}mariadb
 %else
-Usage: service %{?scl_prefix}mysqld start
+Usage: service %{?scl_prefix}mariadb start
 %endif
 
 Software Collections allow you to build and execute applications
@@ -24,7 +24,7 @@ MariaDB is a community developed branch of MySQL.
 When you want to work with the %{?scl_name} collection, use the scl
 utility (see the scl(1) man page for usage) to enable the scl
 environment. The only exception is starting and stopping
-%{?scl_prefix}mysqld daemon, where scl environment is enabled
+%{?scl_prefix}mariadb daemon, where SCL environment is enabled
 implicitely within the SysV init script or systemd unit file.
 
 Configuration for the %{?scl_name} software collection is located
@@ -47,13 +47,22 @@ scl enable %{?scl_name} bash
 %if 0%{?rhel} >= 7 || 0%{?fedora} >= 15
 systemctl start %{?scl_prefix}mariadb
 %else
-service %{?scl_prefix}mysqld start
+service %{?scl_prefix}mariadb start
 %endif
     Starts the MariaDB server from %{?scl_name} software collection.
 
 scl enable %{?scl_name} 'man mysql'
   Show man pages for the mysql command, which is a part of the
   %{?scl_name} software collection.
+
+For running the test suite, which is available in %{?scl_prefix}mariadb-test
+package, see the %{_datadir}/mysql-test/README. Please, be aware that you need
+to run all the commands mentioned in the README file in a proper SCL
+environment. Thus the recommended way to run the test suite is to run the bash
+with %{?scl_name} collection enabled:
+
+scl enable %{?scl_name} bash
+  Run bash with the %{?scl_name} collection enabled.
 
 Files:
 %{_scl_scripts}/service-environment
